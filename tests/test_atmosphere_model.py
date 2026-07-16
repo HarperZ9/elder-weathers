@@ -91,6 +91,26 @@ class TestPalettePhysics(unittest.TestCase):
         storm = self.color("storm", ColorType.SKY_UPPER, TimeOfDay.DAY)
         self.assertGreater(snow.luminance, storm.luminance)
 
+    def test_stars_track_cloud_cover(self):
+        # Stars are a night-sky feature the covered archetypes must not show.
+        clear = self.color("clear", ColorType.STARS, TimeOfDay.NIGHT).luminance
+        cloudy = self.color("cloudy", ColorType.STARS, TimeOfDay.NIGHT).luminance
+        self.assertGreater(clear, 120)
+        self.assertLess(cloudy, clear * 0.6)
+        for covered in ("overcast", "rain", "storm", "fog", "snow"):
+            self.assertLess(
+                self.color(covered, ColorType.STARS, TimeOfDay.NIGHT).luminance, 10,
+                covered)
+        for name in self.palettes:
+            self.assertLess(
+                self.color(name, ColorType.STARS, TimeOfDay.DAY).luminance, 5, name)
+
+    def test_fog_wall_denser_than_clear_haze(self):
+        # A lower fog power pulls density toward the near plane: the fog
+        # archetype must read as a wall, not a haze.
+        self.assertLess(self.palettes["fog"].fog.day_pow,
+                        self.palettes["clear"].fog.day_pow)
+
     def test_classification_flags(self):
         self.assertTrue(self.palettes["clear"].is_pleasant)
         self.assertTrue(self.palettes["rain"].is_rainy)

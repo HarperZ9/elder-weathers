@@ -92,6 +92,16 @@ class TestPluginRoundTrip(unittest.TestCase):
             total += chance
         self.assertEqual(total, 100)
 
+    def test_cloud_layers_are_banded(self):
+        # Lower cloud layers sit nearer the horizon light, upper layers
+        # nearer the zenith: the two bands must not be painted identically.
+        by_edid = {w.edid: w for w in self.reparsed.records("WTHR")}
+        pnam = by_edid["EWClear"].first("PNAM").data
+        self.assertEqual(len(pnam), 512)
+        low_band = pnam[:16]     # layer 0, all four times
+        high_band = pnam[16 * 16:16 * 16 + 16]  # layer 16
+        self.assertNotEqual(low_band, high_band)
+
     def test_climate_keeps_vanilla_timing_and_textures(self):
         clmt = self.reparsed.records("CLMT")[0]
         vanilla_clmt = next(c for c in self.vanilla.records("CLMT")

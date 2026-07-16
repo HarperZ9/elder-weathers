@@ -21,18 +21,20 @@ class Archetype:
     fog_near: float       # daytime near fog plane, game units
     fog_far: float        # daytime far fog plane, game units
     flags: int
-    wind_speed: int = 32  # 0..255
+    wind_speed: int = 32       # 0..255
+    star_visibility: float = 0.0  # 0 hidden .. 1 full night sky
+    fog_pow: float = 0.4       # lower = density piles at the near plane
 
 
 ARCHETYPES: dict[str, Archetype] = {
     "clear": Archetype(
         "clear", turbidity=2.0, cloud_cover=0.05, darkening=0.0,
         desaturation=0.0, fog_near=1400.0, fog_far=90000.0,
-        flags=FLAG_PLEASANT, wind_speed=24),
+        flags=FLAG_PLEASANT, wind_speed=24, star_visibility=1.0),
     "cloudy": Archetype(
         "cloudy", turbidity=3.0, cloud_cover=0.45, darkening=0.05,
         desaturation=0.2, fog_near=1200.0, fog_far=60000.0,
-        flags=FLAG_CLOUDY, wind_speed=48),
+        flags=FLAG_CLOUDY, wind_speed=48, star_visibility=0.45),
     "overcast": Archetype(
         "overcast", turbidity=4.0, cloud_cover=0.95, darkening=0.12,
         desaturation=0.7, fog_near=1000.0, fog_far=42000.0,
@@ -48,7 +50,7 @@ ARCHETYPES: dict[str, Archetype] = {
     "fog": Archetype(
         "fog", turbidity=7.0, cloud_cover=0.8, darkening=0.10,
         desaturation=0.85, fog_near=250.0, fog_far=9000.0,
-        flags=FLAG_CLOUDY, wind_speed=8),
+        flags=FLAG_CLOUDY, wind_speed=8, fog_pow=0.22),
     "snow": Archetype(
         "snow", turbidity=3.5, cloud_cover=0.9, darkening=0.08,
         desaturation=0.9, fog_near=900.0, fog_far=26000.0,

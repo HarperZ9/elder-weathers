@@ -19,6 +19,7 @@ from __future__ import annotations
 import struct
 
 from .reader import PluginReader, Record, FLAG_LIGHT
+from .region import build_region_overrides
 from .weather import ColorType, TimeOfDay, WeatherView
 
 _RECORD_HEADER = struct.Struct("<4sIIIHHHH")
@@ -109,10 +110,28 @@ def _merged_data(template: bytes, palette: WeatherView) -> bytes:
 
 
 def _cloud_colors(palette: WeatherView) -> bytes:
-    """PNAM: 32 layers x 4 times, uniform per time from the model."""
-    per_time = [palette.color(ColorType.CLOUD_LOD_DIFFUSE, t) for t in TimeOfDay]
-    row = b"".join(bytes((c.r, c.g, c.b, c.a)) for c in per_time)
-    return row * 32
+    """PNAM: 32 layers x 4 times, in two altitude bands.
+
+    Low layers (0-15) sit nearer the horizon light and mix toward it;
+    high layers (16-31) sit nearer the zenith and cool toward it.
+    """
+    def mixed(base, toward, t):
+        return bytes((
+            int(base.r + (toward.r - base.r) * t),
+            int(base.g + (toward.g - base.g) * t),
+            int(base.b + (toward.b - base.b) * t),
+            base.a))
+
+    rows = []
+    for target_type, weight in ((ColorType.HORIZON, 0.35),
+                                (ColorType.SKY_UPPER, 0.35)):
+        row = b""
+        for tod in TimeOfDay:
+            base = palette.color(ColorType.CLOUD_LOD_DIFFUSE, tod)
+            toward = palette.color(target_type, tod)
+            row += mixed(base, toward, weight)
+        rows.append(row)
+    return rows[0] * 16 + rows[1] * 16
 
 
 def _directional_ambient(palette: WeatherView, time: TimeOfDay) -> bytes:
@@ -180,9 +199,14 @@ def build_weather_plugin(palettes: dict[str, WeatherView],
             palettes[name], template, f"EW{name.capitalize()}", form_id)
 
     climate_records = _build_climate_override(vanilla_climate, weather_ids)
+    region_records = build_region_overrides(vanilla, weather_ids, _pack_record)
+    region_count = region_records and len(
+        [1 for _ in _iter_record_offsets(region_records)]) or 0
 
+    record_count = 1 + len(palettes) + 1 + region_count + 3  # records + groups
     header_subs = [
-        ("HEDR", struct.pack("<fII", 1.71, 10, _FIRST_OBJECT_ID + len(palettes))),
+        ("HEDR", struct.pack("<fII", 1.71, record_count,
+                             _FIRST_OBJECT_ID + len(palettes))),
         ("CNAM", b"elder-weathers\x00"),
         ("MAST", b"Skyrim.esm\x00"),
         ("DATA", struct.pack("<Q", 0)),
@@ -190,4 +214,13 @@ def build_weather_plugin(palettes: dict[str, WeatherView],
     tes4 = _pack_record("TES4", FLAG_LIGHT, 0, 44, header_subs)
 
     return tes4 + _pack_group("CLMT", climate_records) + \
+        _pack_group("REGN", region_records) + \
         _pack_group("WTHR", weather_records)
+
+
+def _iter_record_offsets(records: bytes):
+    offset = 0
+    while offset < len(records):
+        data_size = struct.unpack_from("<I", records, offset + 4)[0]
+        yield offset
+        offset += _RECORD_HEADER.size + data_size

@@ -2,7 +2,8 @@
 
 Original Skyrim weathers generated from an atmosphere model instead of
 hand-tuned tables. One command produces `EWWeathers.esp`: seven authored
-weather families and a climate override, as a light (ESL-flagged) plugin.
+weather families, a climate override, and a full Tamriel region pass, as a
+light (ESL-flagged) plugin.
 
 ```
 python -m elder_weathers build --skyrim-esm "<path to Skyrim.esm>" --out EWWeathers.esp
@@ -37,13 +38,23 @@ spaces) are inherited from the matching vanilla weather family by form
 reference, the way any plugin references game content. There are no
 third-party values anywhere in the output.
 
+## The region pass
+
+Skyrim distributes most of its weather through region records, so the plugin
+overrides every Tamriel-worldspace distribution region (tundra, forests, the
+Reach, coast, snow, marsh, and the rest) onto the authored weathers. Each
+vanilla weather in a region's list is classified empirically (precipitation
+flags, thunder bytes, fog planes, sky spectral spread) and its chance moves
+to the matching archetype, so every region keeps its climate character: snowy
+regions keep their snow share, rainy coasts keep their rain. FX regions,
+scripted quest weathers, and non-Tamriel worldspaces are untouched byte for
+byte; city worldspaces are a later pass.
+
 ## Scope, stated plainly
 
-The plugin overrides the default climate, so the authored weathers drive any
-area using it. Skyrim distributes most of its weather through region records;
-a region-level pass is the next milestone and is not in this plugin yet.
 In-game visual validation is ahead of this tool: the gates prove format
-correctness and physical coherence, not that it is beautiful.
+correctness, physical coherence, and character preservation, not that it is
+beautiful.
 
 ## Gates
 

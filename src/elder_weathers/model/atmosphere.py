@@ -116,9 +116,18 @@ def _to_color(linear: tuple, exposure: float = 255.0, gamma: float = 1.0 / 2.2) 
     return Color(channels[0], channels[1], channels[2], 255)
 
 
+def _star_color(arch: Archetype, night: bool) -> Color:
+    """Stars are emissive points occluded by cloud cover: their display
+    value scales linearly with the visible fraction, after tone mapping."""
+    if not night:
+        return Color(0, 0, 0, 255)
+    full = _to_color((0.35, 0.35, 0.35)).r
+    v = int(round(full * arch.star_visibility))
+    return Color(v, v, v, 255)
+
+
 def _slot_colors(arch: Archetype, tod: TimeOfDay) -> dict[ColorType, Color]:
     m = _SlotModel(arch, tod)
-    star_lum = 0.35 if m.night else 0.0
     return {
         ColorType.SKY_UPPER: _to_color(m.zenith),
         ColorType.FOG_NEAR: _to_color(_desaturate(m.horizon, 0.4)),
@@ -126,7 +135,7 @@ def _slot_colors(arch: Archetype, tod: TimeOfDay) -> dict[ColorType, Color]:
         ColorType.AMBIENT: _to_color(m.ambient),
         ColorType.SUNLIGHT: _to_color(m.direct),
         ColorType.SUN: _to_color(_scale(m.direct, 1.6)),
-        ColorType.STARS: _to_color((star_lum, star_lum, star_lum)),
+        ColorType.STARS: _star_color(arch, m.night),
         ColorType.SKY_LOWER: _to_color(_mix(m.zenith, m.horizon, 0.6)),
         ColorType.HORIZON: _to_color(m.horizon),
         ColorType.EFFECT_LIGHTING: _to_color(m.ambient),
@@ -158,7 +167,7 @@ def generate_palette(arch: Archetype) -> WeatherView:
     fog_values = struct.unpack("<8f", struct.pack(
         "<8f", arch.fog_near, arch.fog_far,
         arch.fog_near * 0.85, arch.fog_far * 0.6,
-        0.4, 0.4, 0.9, 0.9))
+        arch.fog_pow, arch.fog_pow, 0.9, 0.9))
     fog = FogDistances(*fog_values)
 
     data = bytearray(19)
