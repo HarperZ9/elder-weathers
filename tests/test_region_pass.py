@@ -12,7 +12,7 @@ import unittest
 from elder_weathers.esp.reader import PluginReader
 from elder_weathers.esp.region import classify_weather, plan_region_overrides
 from elder_weathers.esp.writer import build_weather_plugin
-from elder_weathers.model.archetypes import ARCHETYPES
+from elder_weathers.model.archetypes import ARCHETYPES, FAMILY_OF, WEATHERS, name_of_edid
 from elder_weathers.model.atmosphere import generate_palette
 from tests.test_esm_ground_truth import ESM
 
@@ -40,8 +40,8 @@ class TestClassifier(unittest.TestCase):
     def test_every_targeted_weather_classifies(self):
         plan = plan_region_overrides(self.vanilla)
         for region_edid, entries in plan.items():
-            for archetype, chance in entries:
-                self.assertIn(archetype, ARCHETYPES, region_edid)
+            for weather_name, chance in entries:
+                self.assertIn(weather_name, WEATHERS, region_edid)
 
 
 @unittest.skipIf(ESM is None, "no Skyrim.esm available (set ELDER_WEATHERS_SKYRIM_ESM)")
@@ -49,7 +49,7 @@ class TestRegionOverrides(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.vanilla = PluginReader(ESM)
-        palettes = {name: generate_palette(a) for name, a in ARCHETYPES.items()}
+        palettes = {name: generate_palette(a) for name, a in WEATHERS.items()}
         data = build_weather_plugin(palettes, cls.vanilla)
 
         import os, tempfile
@@ -112,8 +112,8 @@ class TestRegionOverrides(unittest.TestCase):
             return classify_weather(vanilla_weathers[fid])
 
         def classify_ours(fid):
-            edid = self.weather_by_id[fid].edid          # EWSnow -> snow
-            return edid[2:].lower()
+            name = name_of_edid(self.weather_by_id[fid].edid)
+            return FAMILY_OF[name]
 
         for edid, ours in self.our_regions.items():
             want = self._shares(self.vanilla_regions[edid].first("RDWT").data,

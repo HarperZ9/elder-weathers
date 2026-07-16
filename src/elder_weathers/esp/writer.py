@@ -21,6 +21,7 @@ import struct
 from .reader import PluginReader, Record, FLAG_LIGHT
 from .region import build_region_overrides
 from .weather import ColorType, TimeOfDay, WeatherView
+from ..model.archetypes import FAMILY_OF, edid_of, split_family_chance
 
 _RECORD_HEADER = struct.Struct("<4sIIIHHHH")
 _GROUP_HEADER = struct.Struct("<4sI4siHHHH")
@@ -168,8 +169,10 @@ def _build_weather(palette: WeatherView, template: Record, edid: str,
 def _build_climate_override(vanilla_climate: Record,
                             weather_ids: dict[str, int]) -> bytes:
     entries = b""
-    for name, form_id in weather_ids.items():
-        entries += struct.pack("<IiI", form_id, _CHANCES[name], 0)
+    for family, family_chance in _CHANCES.items():
+        for name, chance in split_family_chance(family, family_chance):
+            if name in weather_ids:
+                entries += struct.pack("<IiI", weather_ids[name], chance, 0)
     subs = [(s.type, s.data) for s in vanilla_climate.subrecords]
     subs = _replace(subs, "WLST", entries)
     return _pack_record("CLMT", 0, vanilla_climate.form_id,
@@ -180,8 +183,9 @@ def build_weather_plugin(palettes: dict[str, WeatherView],
                          vanilla: PluginReader) -> bytes:
     """Build the ESL-flagged plugin from generated palettes and vanilla
     structural templates."""
-    if set(palettes) != set(TEMPLATE_FOR):
-        raise ValueError("palettes must cover exactly the known archetypes")
+    unknown = {n for n in palettes if FAMILY_OF.get(n) not in TEMPLATE_FOR}
+    if unknown:
+        raise ValueError(f"palettes with unknown family: {sorted(unknown)}")
     if sum(_CHANCES.values()) != 100:
         raise ValueError("climate chances must sum to 100")
 
@@ -192,11 +196,11 @@ def build_weather_plugin(palettes: dict[str, WeatherView],
     weather_ids: dict[str, int] = {}
     weather_records = b""
     for i, name in enumerate(sorted(palettes)):
-        template = by_edid[TEMPLATE_FOR[name]]
+        template = by_edid[TEMPLATE_FOR[FAMILY_OF[name]]]
         form_id = (_MODULE_INDEX << 24) | (_FIRST_OBJECT_ID + i)
         weather_ids[name] = form_id
         weather_records += _build_weather(
-            palettes[name], template, f"EW{name.capitalize()}", form_id)
+            palettes[name], template, edid_of(name), form_id)
 
     climate_records = _build_climate_override(vanilla_climate, weather_ids)
     region_records = build_region_overrides(vanilla, weather_ids, _pack_record)

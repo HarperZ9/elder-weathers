@@ -10,7 +10,7 @@ import unittest
 from elder_weathers.esp.reader import FLAG_LIGHT, FLAG_MASTER, PluginReader
 from elder_weathers.esp.weather import WeatherView
 from elder_weathers.esp.writer import build_weather_plugin
-from elder_weathers.model.archetypes import ARCHETYPES
+from elder_weathers.model.archetypes import ARCHETYPES, WEATHERS, edid_of
 from elder_weathers.model.atmosphere import generate_palette
 from tests.test_esm_ground_truth import ESM
 
@@ -20,7 +20,7 @@ class TestPluginRoundTrip(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.vanilla = PluginReader(ESM)
-        cls.palettes = {name: generate_palette(a) for name, a in ARCHETYPES.items()}
+        cls.palettes = {name: generate_palette(a) for name, a in WEATHERS.items()}
         cls.plugin_bytes = build_weather_plugin(cls.palettes, cls.vanilla)
 
         import io, tempfile, os
@@ -43,12 +43,12 @@ class TestPluginRoundTrip(unittest.TestCase):
         masters = [s.data.rstrip(b"\x00").decode() for s in header.all("MAST")]
         self.assertEqual(masters, ["Skyrim.esm"])
 
-    def test_seven_weathers_present(self):
+    def test_roster_weathers_present(self):
         weathers = self.reparsed.records("WTHR")
-        self.assertEqual(len(weathers), 7)
+        self.assertEqual(len(weathers), len(WEATHERS))
         edids = {w.edid for w in weathers}
-        for name in ARCHETYPES:
-            self.assertIn(f"EW{name.capitalize()}", edids)
+        for name in WEATHERS:
+            self.assertIn(edid_of(name), edids)
 
     def test_weather_formids_are_esl_safe_new_records(self):
         for w in self.reparsed.records("WTHR"):
@@ -58,7 +58,7 @@ class TestPluginRoundTrip(unittest.TestCase):
     def test_palette_blocks_round_trip_exactly(self):
         by_edid = {w.edid: w for w in self.reparsed.records("WTHR")}
         for name, palette in self.palettes.items():
-            record = by_edid[f"EW{name.capitalize()}"]
+            record = by_edid[edid_of(name)]
             view = WeatherView.from_record(record)
             self.assertEqual(view.raw_colors, palette.raw_colors, name)
             self.assertEqual(view.fog, palette.fog, name)
@@ -83,7 +83,7 @@ class TestPluginRoundTrip(unittest.TestCase):
         self.assertEqual(clmt.form_id, vanilla_clmt.form_id)  # true override
 
         wlst = clmt.first("WLST").data
-        self.assertEqual(len(wlst), 7 * 12)
+        self.assertEqual(len(wlst), len(WEATHERS) * 12)
         weather_ids = {w.form_id for w in self.reparsed.records("WTHR")}
         total = 0
         for off in range(0, len(wlst), 12):

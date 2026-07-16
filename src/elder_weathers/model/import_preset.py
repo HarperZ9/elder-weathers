@@ -15,7 +15,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 
 from ..esp.weather import Color, ColorType, FogDistances, TimeOfDay, WeatherView
-from .archetypes import ARCHETYPES, Archetype
+from .archetypes import WEATHERS, Archetype, name_of_edid
 from .atmosphere import generate_palette, _to_color
 from .presets import COLOR_TYPE_NAMES, TOD_NAMES
 
@@ -112,8 +112,8 @@ def import_preset(path: Path | str,
 
     if archetype_name is None:
         edid = sections.get("Identity", {}).get("EditorID", path.stem)
-        archetype_name = edid[2:].lower() if edid.startswith("EW") else edid.lower()
-    base = ARCHETYPES.get(archetype_name, ARCHETYPES["clear"])
+        archetype_name = name_of_edid(edid) or edid.lower()
+    base = WEATHERS.get(archetype_name, WEATHERS["clear"])
 
     # ── Direct knobs ─────────────────────────────────────────────────────
     fog = sections.get("Fog", {})

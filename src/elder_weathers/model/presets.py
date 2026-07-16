@@ -17,6 +17,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from ..esp.weather import ColorType, TimeOfDay, WeatherView
+from .archetypes import edid_of
 
 # Names must match the plugin's parser exactly.
 COLOR_TYPE_NAMES = {
@@ -119,7 +120,7 @@ def export_presets(palettes: dict[str, WeatherView], out_dir: Path) -> list[Path
     out_dir.mkdir(parents=True, exist_ok=True)
     written: list[Path] = []
     for i, name in enumerate(sorted(palettes)):
-        edid = f"EW{name.capitalize()}"
+        edid = edid_of(name)
         path = out_dir / f"{edid}.ini"
         _write_preset(palettes[name], edid, _FIRST_FORM_ID + i, path)
         written.append(path)

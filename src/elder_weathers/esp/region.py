@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import struct
 
+from ..model.archetypes import split_family_chance
 from .reader import PluginReader, Record
 from .weather import ColorType, TimeOfDay, WeatherView
 
@@ -70,11 +71,11 @@ def _target_regions(vanilla: PluginReader) -> list[Record]:
 
 
 def plan_region_overrides(vanilla: PluginReader) -> dict[str, list[tuple[str, int]]]:
-    """Per targeted region: (archetype, merged chance) entries.
+    """Per targeted region: (weather name, chance) entries.
 
-    Entries classifying to the same archetype merge; each region's chance
-    total is preserved exactly. Entry order is stable (sorted by archetype)
-    so output bytes are deterministic.
+    Entries classifying to the same family merge first, so the family share
+    is exact; then each family's share splits across its variants with the
+    integer total preserved. Order is deterministic.
     """
     weather_by_id = {w.form_id: w for w in vanilla.records("WTHR")}
     plan: dict[str, list[tuple[str, int]]] = {}
@@ -83,9 +84,12 @@ def plan_region_overrides(vanilla: PluginReader) -> dict[str, list[tuple[str, in
         shares: dict[str, int] = {}
         for offset in range(0, len(rdwt), 12):
             fid, chance, _global = struct.unpack_from("<IiI", rdwt, offset)
-            archetype = classify_weather(weather_by_id[fid])
-            shares[archetype] = shares.get(archetype, 0) + chance
-        plan[region.edid] = sorted(shares.items())
+            family = classify_weather(weather_by_id[fid])
+            shares[family] = shares.get(family, 0) + chance
+        entries: list[tuple[str, int]] = []
+        for family, total in sorted(shares.items()):
+            entries.extend(split_family_chance(family, total))
+        plan[region.edid] = entries
     return plan
 
 

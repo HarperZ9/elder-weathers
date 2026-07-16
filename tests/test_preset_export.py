@@ -11,7 +11,7 @@ from pathlib import Path
 import tempfile
 
 from elder_weathers.esp.weather import ColorType, TimeOfDay
-from elder_weathers.model.archetypes import ARCHETYPES
+from elder_weathers.model.archetypes import ARCHETYPES, WEATHERS, edid_of
 from elder_weathers.model.atmosphere import generate_palette
 from elder_weathers.model.presets import export_presets, COLOR_TYPE_NAMES, TOD_NAMES
 
@@ -36,15 +36,15 @@ def parse_preset(path: Path) -> dict[str, dict[str, str]]:
 class TestPresetExport(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.palettes = {name: generate_palette(a) for name, a in ARCHETYPES.items()}
+        cls.palettes = {name: generate_palette(a) for name, a in WEATHERS.items()}
         cls.dir = Path(tempfile.mkdtemp())
         cls.written = export_presets(cls.palettes, cls.dir)
         cls.presets = {p.stem: parse_preset(p) for p in cls.written}
 
-    def test_one_preset_per_archetype_named_by_editor_id(self):
-        self.assertEqual(len(self.written), len(ARCHETYPES))
-        for name in ARCHETYPES:
-            self.assertIn(f"EW{name.capitalize()}", self.presets)
+    def test_one_preset_per_weather_named_by_editor_id(self):
+        self.assertEqual(len(self.written), len(WEATHERS))
+        for name in WEATHERS:
+            self.assertIn(edid_of(name), self.presets)
 
     def test_only_model_owned_sections(self):
         for name, sections in self.presets.items():

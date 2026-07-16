@@ -13,7 +13,7 @@ from pathlib import Path
 from .esp.reader import PluginReader
 from .esp.weather import ColorType, TimeOfDay
 from .esp.writer import build_weather_plugin
-from .model.archetypes import ARCHETYPES
+from .model.archetypes import ARCHETYPES, WEATHERS
 from .model.atmosphere import generate_palette
 from .model.import_preset import import_preset
 from .model.presets import export_presets
@@ -26,7 +26,7 @@ def _cmd_build(args: argparse.Namespace) -> int:
         return 2
 
     vanilla = PluginReader(esm)
-    palettes = {name: generate_palette(a) for name, a in ARCHETYPES.items()}
+    palettes = {name: generate_palette(a) for name, a in WEATHERS.items()}
     data = build_weather_plugin(palettes, vanilla)
 
     out = Path(args.out)
@@ -43,7 +43,7 @@ def _cmd_build(args: argparse.Namespace) -> int:
 
 
 def _cmd_export_presets(args: argparse.Namespace) -> int:
-    palettes = {name: generate_palette(a) for name, a in ARCHETYPES.items()}
+    palettes = {name: generate_palette(a) for name, a in WEATHERS.items()}
     written = export_presets(palettes, Path(args.out))
     print(f"{len(written)} workshop presets written to {args.out}")
     return 0
@@ -83,10 +83,10 @@ def _cmd_import_preset(args: argparse.Namespace) -> int:
 
 
 def _cmd_show(args: argparse.Namespace) -> int:
-    arch = ARCHETYPES.get(args.archetype)
+    arch = WEATHERS.get(args.archetype)
     if arch is None:
-        print(f"error: unknown archetype {args.archetype!r} "
-              f"(have: {', '.join(ARCHETYPES)})", file=sys.stderr)
+        print(f"error: unknown weather {args.archetype!r} "
+              f"(have: {', '.join(sorted(WEATHERS))})", file=sys.stderr)
         return 2
     palette = generate_palette(arch)
     for ct in ColorType:
