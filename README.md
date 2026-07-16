@@ -73,6 +73,16 @@ Ground-truth suites skip cleanly when no `Skyrim.esm` is available; set
 `ELDER_WEATHERS_SKYRIM_ESM` to point at one. Model and writer unit tests run
 anywhere.
 
+## The workshop bridge
+
+`python -m elder_weathers export-presets` writes one
+[SkyrimBridge](https://github.com/HarperZ9/skyrimbridge) weather-workshop
+preset per archetype. With the plugin installed, those presets auto-load
+when their weather is active and hot-reload on edit, so a weather authored
+by the model here can be tuned live in game and the tuned values compared
+back against the model. Presets carry only the sections the model owns;
+everything else keeps its in-game value.
+
 ## Install
 
 `EWWeathers.esp` is a normal light plugin: add it to your load order (as a

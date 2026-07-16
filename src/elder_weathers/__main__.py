@@ -15,6 +15,7 @@ from .esp.weather import ColorType, TimeOfDay
 from .esp.writer import build_weather_plugin
 from .model.archetypes import ARCHETYPES
 from .model.atmosphere import generate_palette
+from .model.presets import export_presets
 
 
 def _cmd_build(args: argparse.Namespace) -> int:
@@ -37,6 +38,13 @@ def _cmd_build(args: argparse.Namespace) -> int:
     print(f"{out.name}: {len(data)} bytes, {len(weathers)} weathers, "
           f"{len(climates)} climate override, {len(regions)} region overrides; "
           f"re-parse clean")
+    return 0
+
+
+def _cmd_export_presets(args: argparse.Namespace) -> int:
+    palettes = {name: generate_palette(a) for name, a in ARCHETYPES.items()}
+    written = export_presets(palettes, Path(args.out))
+    print(f"{len(written)} workshop presets written to {args.out}")
     return 0
 
 
@@ -66,6 +74,12 @@ def main(argv: list[str] | None = None) -> int:
                          help="path to a Skyrim Special Edition Skyrim.esm")
     p_build.add_argument("--out", default="EWWeathers.esp")
     p_build.set_defaults(func=_cmd_build)
+
+    p_export = sub.add_parser(
+        "export-presets",
+        help="write SkyrimBridge weather-workshop presets for every archetype")
+    p_export.add_argument("--out", default="WeatherPresets")
+    p_export.set_defaults(func=_cmd_export_presets)
 
     p_show = sub.add_parser("show", help="print one archetype's palette")
     p_show.add_argument("archetype")
