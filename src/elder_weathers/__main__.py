@@ -33,8 +33,10 @@ def _cmd_build(args: argparse.Namespace) -> int:
     reparsed = PluginReader(out)
     weathers = reparsed.records("WTHR")
     climates = reparsed.records("CLMT")
+    regions = reparsed.records("REGN")
     print(f"{out.name}: {len(data)} bytes, {len(weathers)} weathers, "
-          f"{len(climates)} climate override; re-parse clean")
+          f"{len(climates)} climate override, {len(regions)} region overrides; "
+          f"re-parse clean")
     return 0
 
 
