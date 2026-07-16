@@ -15,6 +15,7 @@ from .esp.weather import ColorType, TimeOfDay
 from .esp.writer import build_weather_plugin
 from .model.archetypes import ARCHETYPES
 from .model.atmosphere import generate_palette
+from .model.import_preset import import_preset
 from .model.presets import export_presets
 
 
@@ -45,6 +46,39 @@ def _cmd_export_presets(args: argparse.Namespace) -> int:
     palettes = {name: generate_palette(a) for name, a in ARCHETYPES.items()}
     written = export_presets(palettes, Path(args.out))
     print(f"{len(written)} workshop presets written to {args.out}")
+    return 0
+
+
+def _cmd_import_preset(args: argparse.Namespace) -> int:
+    try:
+        result = import_preset(Path(args.preset), archetype_name=args.name)
+    except FileNotFoundError:
+        print(f"error: preset not found: {args.preset}", file=sys.stderr)
+        return 2
+
+    a = result.archetype
+    print(f"Fitted archetype (residual: mean {result.residual_mean:.2f}, "
+          f"max {result.residual_max:.0f} of 255):")
+    print()
+    print(f'    "{a.name}": Archetype(')
+    print(f'        "{a.name}", turbidity={a.turbidity:.2f}, cloud_cover={a.cloud_cover:.2f}, '
+          f'darkening={a.darkening:.2f},')
+    print(f'        desaturation={a.desaturation:.2f}, fog_near={a.fog_near:.1f}, '
+          f'fog_far={a.fog_far:.1f},')
+    extras = f'flags={a.flags}, wind_speed={a.wind_speed}'
+    if a.star_visibility:
+        extras += f', star_visibility={a.star_visibility:.2f}'
+    if abs(a.fog_pow - 0.4) > 1e-6:
+        extras += f', fog_pow={a.fog_pow:.2f}'
+    print(f'        {extras}),')
+    print()
+    if result.residual_mean > 6.0:
+        print("note: the residual is large; this tuning goes beyond what the "
+              "model expresses. Keep the preset itself as the artifact of "
+              "record for it.")
+    else:
+        print("Paste into ARCHETYPES in src/elder_weathers/model/archetypes.py, "
+              "then rebuild: build + export-presets.")
     return 0
 
 
@@ -80,6 +114,14 @@ def main(argv: list[str] | None = None) -> int:
         help="write SkyrimBridge weather-workshop presets for every archetype")
     p_export.add_argument("--out", default="WeatherPresets")
     p_export.set_defaults(func=_cmd_export_presets)
+
+    p_import = sub.add_parser(
+        "import-preset",
+        help="fit a tuned workshop preset back into archetype knobs")
+    p_import.add_argument("preset", help="path to a WeatherPresets INI")
+    p_import.add_argument("--name", default=None,
+                          help="archetype to fit against (default: from EditorID)")
+    p_import.set_defaults(func=_cmd_import_preset)
 
     p_show = sub.add_parser("show", help="print one archetype's palette")
     p_show.add_argument("archetype")

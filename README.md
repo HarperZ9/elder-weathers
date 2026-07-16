@@ -83,6 +83,15 @@ by the model here can be tuned live in game and the tuned values compared
 back against the model. Presets carry only the sections the model owns;
 everything else keeps its in-game value.
 
+`python -m elder_weathers import-preset <file>` closes the loop: it fits a
+tuned preset back into archetype knobs. Direct knobs (fog planes and power,
+wind, flags, star visibility) invert exactly; the scattering knobs
+(turbidity, cloud cover, darkening, desaturation) are recovered by fitting
+the model to the tuned colors, and the residual is reported. A small
+residual prints a ready-to-paste archetype; a large one means the tuning
+went beyond what the model expresses, and the preset itself stays the
+artifact of record.
+
 ## Install
 
 `EWWeathers.esp` is a normal light plugin: add it to your load order (as a
