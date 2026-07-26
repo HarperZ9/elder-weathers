@@ -4,3 +4,6 @@ __pycache__/
 .env
 .env.*
 CLAUDE.local.md
+
+# The committed template must survive the .env.* rule above (global standard)
+!.env.example
