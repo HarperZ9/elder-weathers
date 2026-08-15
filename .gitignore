@@ -11,3 +11,10 @@ CLAUDE.local.md
 # direnv environment files (can hold exported secrets)
 .envrc
 .envrc.local
+
+# Nexus page artwork. Upload material, not a build input: nothing in this repo
+# reads it, and Nexus hosts the images once they are uploaded. Kept out of git
+# because blobs are permanent, the current set is 18 MB of PNG for content that
+# is 2.7 MB as JPEG, and the banners still read "7 ARCHETYPES" from before the
+# roster grew to nineteen weathers.
+media/
