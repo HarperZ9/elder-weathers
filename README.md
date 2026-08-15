@@ -1,9 +1,9 @@
 # elder-weathers
 
 Original Skyrim weathers generated from an atmosphere model instead of
-hand-tuned tables. One command produces `EWWeathers.esp`: seven authored
-weather families, a climate override, and a full Tamriel region pass, as a
-light (ESL-flagged) plugin.
+hand-tuned tables. One command produces `EWWeathers.esp`: nineteen weathers
+across seven authored families, a climate override, and a full Tamriel region
+pass, as a light (ESL-flagged) plugin.
 
 ```
 python -m elder_weathers build --skyrim-esm "<path to Skyrim.esm>" --out EWWeathers.esp
@@ -20,6 +20,13 @@ turbidity-scaled Mie term) evaluates each archetype at four times of day and
 fills the full 17-type weather color block, fog planes, cloud colors, and
 directional ambient. Seven archetypes span the weather space: clear, cloudy,
 overcast, rain, storm, fog, snow.
+
+Each family carries variants sampled from the same parameter space, for
+nineteen weathers in total: crisp and hazy clears, light and heavy cloud and
+rain, a bright overcast, a violent storm, mist and dense fog, light snow and a
+blizzard. Every variant satisfies its family's physics and its named ordering
+(dense fog nearer than mist, blizzard darker and windier than light snow),
+asserted as invariants in `tests/test_variants.py`.
 
 The model is tested by physical invariant, not by golden values: the day sky
 must be blue-dominant, the sunrise zenith must stay blue while sunlight goes
