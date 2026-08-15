@@ -100,10 +100,40 @@ def _planet(size, cx, cy, radius):
                 for i in range(3))
             px[x, y] = col
 
-    # Faint mottling so the body is not a clean gradient.
-    mottle = _grain(size, 23, 18).filter(ImageFilter.GaussianBlur(9))
-    body = Image.blend(body, Image.merge("RGB", [mottle] * 3), 0.035)
+    body = _cloud_mottle(body, mask, size, radius)
     return body, mask
+
+
+def _cloud_mottle(body, mask, size, radius):
+    """Elongated cloud banding across the planet body.
+
+    Blurred white noise gives an even fuzz, which is not what weather looks
+    like from orbit. Clouds sit in latitude bands: wide across, thin down. So
+    the noise is generated in a squat buffer and stretched horizontally, which
+    costs nothing and gives the streaked banding the original has.
+
+    Two octaves, because one reads as a single smear and three starts to look
+    like marble.
+    """
+    w, h = size
+    layer = Image.new("L", (w, h), 128)
+    for octave, (cells, weight, squash) in enumerate(
+            ((14, 0.62, 5.0), (34, 0.38, 3.2))):
+        cw = max(2, cells)
+        ch = max(2, int(cells / squash))
+        rng = random.Random(101 + octave)
+        small = Image.new("L", (cw, ch))
+        small.putdata([rng.randrange(0, 256) for _ in range(cw * ch)])
+        grown = small.resize((w, h), Image.BICUBIC)
+        grown = grown.filter(ImageFilter.GaussianBlur(radius * 0.006))
+        layer = Image.blend(layer, grown, weight if octave == 0 else weight * 0.6)
+
+    # Keep the banding off the limb: the edge of the disc is where the eye
+    # checks the silhouette, and texture there reads as a ragged outline.
+    edge = mask.filter(ImageFilter.GaussianBlur(radius * 0.05))
+    layer = Image.composite(layer, Image.new("L", (w, h), 128), edge)
+
+    return Image.blend(body, Image.merge("RGB", [layer] * 3), 0.075)
 
 
 def _rim_glow(size, cx, cy, radius, width):
