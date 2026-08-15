@@ -1,4 +1,4 @@
-# Nexus mod page content — Elder Weathers
+# Nexus mod page content: Elder Weathers
 
 Everything needed for the Nexus upload form. The description is BBCode, ready
 to paste into the mod-page description field.
