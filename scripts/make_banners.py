@@ -24,7 +24,7 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FONTS = os.path.join(ROOT, "assets", "fonts")
 
-RUNIC = os.path.join(FONTS, "zentropy-runic.ttf")
+RUNIC = os.path.join(FONTS, "zain-runic.ttf")
 GROTESK_MED = os.path.join(FONTS, "hanken-grotesk-medium.ttf")
 GROTESK_REG = os.path.join(FONTS, "hanken-grotesk-regular.ttf")
 
